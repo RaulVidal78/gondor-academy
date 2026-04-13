@@ -1,35 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, Button, Input } from '@mui/material';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import classNames from 'classnames';
 
-// Types
 type Student = {
+  id: string;
   name: string;
-  race: 'Elfos' | 'Enanos' | 'Hombres' | 'Magos';
-  points: number;
+  score: number;
   badges: string[];
-  categoryPoints: { [key: string]: number };
 };
 
-// Constants
-const races = ['Elfos', 'Enanos', 'Hombres', 'Magos'];
-const categories = ['Deberes', 'Comportamiento', 'Almuerzo saludable', 'Rapidez', 'Material', 'Encargado', 'Orden'];
-const musicUrl = 'path/to/music';  // Replace with actual music URL
-const imageUrls = {
-  Elfos: 'path/to/elfos.jpg',
-  Enanos: 'path/to/enanos.jpg',
-  Hombres: 'path/to/hombres.jpg',
-  Magos: 'path/to/magos.jpg',
-};
-
-const App = () => {
+const StudentManagement: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
-  const [name, setName] = useState('');
-  const [race, setRace] = useState<'Elfos' | 'Enanos' | 'Hombres' | 'Magos'>('Elfos');
-  const [points, setPoints] = useState(0);
-  const [musicOn, setMusicOn] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState(categories[0]);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [newStudentName, setNewStudentName] = useState<string>('');
 
   useEffect(() => {
     const storedStudents = localStorage.getItem('students');
@@ -42,80 +24,68 @@ const App = () => {
     localStorage.setItem('students', JSON.stringify(students));
   }, [students]);
 
-  const playSound = () => {
-    if (musicOn) {
-      // Logic to play sound
-    }
-  };
-
   const addStudent = () => {
-    const newStudent: Student = { name, race, points: 0, badges: [], categoryPoints: {} };
+    if (newStudentName.trim() === '') return;
+    const newStudent: Student = {
+      id: Date.now().toString(),
+      name: newStudentName,
+      score: 0,
+      badges: [],
+    };  
     setStudents([...students, newStudent]);
-    playSound();
-    setName('');
+    setNewStudentName('');
   };
 
-  const updatePointsByCategory = (student: Student, category: string, points: number) => {
-    // Logic to update points by category
+  const deleteStudent = (id: string) => {
+    const updatedStudents = students.filter(student => student.id !== id);
+    setStudents(updatedStudents);
   };
 
-  const deleteStudent = (studentToDelete: Student) => {
-    setStudents(students.filter(student => student !== studentToDelete));
-    playSound();
-  };
-
-  const editStudent = (studentToEdit: Student) => {
-    // Logic to edit student
-  };
-
-  const calculateCategoryPoints = (student: Student) => {
-    // Logic to calculate points by category
+  const updateScore = (id: string, increment: number) => {
+    setStudents(students.map(student => {
+      if (student.id === id) {
+        return { ...student, score: student.score + increment };
+      }
+      return student;
+    }));
   };
 
   return (
-    <div className="app">
-      <header className="header">
-        <h1>Student Tracker</h1>
-        <Button onClick={() => setMusicOn(!musicOn)}>{musicOn ? 'Mute' : 'Unmute'}</Button>
-      </header>
-      <form onSubmit={(e) => { e.preventDefault(); addStudent(); }}>
-        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Student Name" required />
-        <select value={race} onChange={(e) => setRace(e.target.value as 'Elfos' | 'Enanos' | 'Hombres' | 'Magos')}> 
-          {races.map(race => <option key={race} value={race}>{race}</option>)}
-        </select>
-        <Button type="submit">Add Student</Button>
-      </form>
-      <div className="student-grid">
+    <div className="p-5 bg-gray-100 rounded-lg shadow-md">
+      <h1 className="text-2xl font-bold mb-4">Student Management</h1>
+      <input  
+        type="text"
+        value={newStudentName}
+        onChange={(e) => setNewStudentName(e.target.value)}
+        placeholder="Enter student name"
+        className="border-2 border-gray-300 p-2 rounded-md mb-2"
+      />
+      <button onClick={addStudent} className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
+        Add Student
+      </button>
+      <motion.ul className="mt-5">
         {students.map(student => (
-          <motion.div key={student.name} whileHover={{ scale: 1.05 }} className="student-card">
-            <Card>
-              <CardContent>
-                <img src={imageUrls[student.race]} alt={student.race} />
-                <h2>{student.name}</h2>
-                <p>Race: {student.race}</p>
-                <p>Total Points: {student.points}</p>
-                <div className="badges">
-                  {student.badges.map(badge => <span key={badge}>{badge}</span>)}
-                </div>
-                {categories.map(category => (
-                  <Button key={category} onClick={() => updatePointsByCategory(student, category, 1)}>+1 {category}</Button>
-                ))}
-                <Button onClick={() => deleteStudent(student)}>Delete</Button>
-                <div>Category Points: {JSON.stringify(calculateCategoryPoints(student))}</div>
-              </CardContent>
-            </Card>
-          </motion.div>
+          <motion.li key={student.id} className="flex justify-between items-center bg-white p-4 rounded-md shadow mb-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <span className="flex-1">
+              {student.name} - Score: {student.score}
+            </span>
+            <div>
+              <button onClick={() => updateScore(student.id, 1)} className="bg-green-500 text-white px-2 py-1 rounded-md hover:bg-green-600 mr-2">
+                +1
+              </button>
+              <button onClick={() => deleteStudent(student.id)} className="bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-600">
+                Delete
+              </button>
+            </div>
+          </motion.li>
         ))}
-      </div>
-      <section className="ranking">
-        <h2>Top Students</h2>
-        {/* Logic to display top students */}
-      </section>
-      <section className="category-filter">
-        {/* Logic for category filter and statistics */}
-      </section>
+      </motion.ul>
     </div>
   );
 };
 
-export default App;
+export default StudentManagement;
